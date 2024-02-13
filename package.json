@@ -1,0 +1,37 @@
+{
+  "name": "waste_management_server_code",
+  "version": "1.0.0",
+  "description": "This code is specifically written for waste management project app",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suman1406/waste_management_server_code.git"
+  },
+  "keywords": [
+    "server_code"
+  ],
+  "author": "Suman Panigrahi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/suman1406/waste_management_server_code/issues"
+  },
+  "homepage": "https://github.com/suman1406/waste_management_server_code#readme",
+  "dependencies": {
+    "cluster": "^0.7.7",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.4",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "helmet": "^7.1.0",
+    "http": "^0.0.1-security",
+    "mysql2": "^3.9.1",
+    "ngrok": "^5.0.0-beta.2",
+    "os": "^0.1.2",
+    "pid": "^1.0.0"
+  }
+}

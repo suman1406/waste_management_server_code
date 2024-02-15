@@ -13,6 +13,8 @@ require('dotenv').config();
 const PORT = process.env.PORT || 8080;
 
 const mainRouter = require('./routes/mainRouter');
+const authRouter = require('./routes/authRouter');
+
 const establishConnection = require('./initializeConnection.js');
 const { generateKey } = require('crypto');
 const { generateKey } = require('./RSA/keyGen');

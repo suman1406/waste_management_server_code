@@ -4,6 +4,6 @@ const fs = require('fs');
 
 module.exports = {
     test: async (req, res) => {
-        res.send('Hello World');
+        res.send('Everything is working fine :)');
     }
 };

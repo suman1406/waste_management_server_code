@@ -13,7 +13,7 @@ const { response } = require("express");
 const { error } = require("console");
 
 module.exports = {
-  OTP_Generation: async (req, res) => {
+  OTP_Generation_SignUp: async (req, res) => {
     const {
       userName,
       email,
@@ -78,6 +78,7 @@ module.exports = {
               ],
               (error, response) => {
                 if (response.affectedRows == 1) {
+                  // don't send otp here, send it via mail
                   res.status(200).json({
                     "USER ADDED": "Registered successfully!",
                     OTP: otp,
@@ -90,6 +91,28 @@ module.exports = {
       );
     } catch (err) {
       console.log(error);
+      res.status(500).json({ ERROR: "Internal Server Error" });
+      return;
+    }
+  },
+  OTP_Generation_ForgotPass: async (req, res) => {
+    const { email } = req.body;
+    const otp = otpGenerator();
+    try {
+      db.query("DELETE FROM otpTable WHERE userEmail = ?", [email]);
+      db.query(
+        "INSERT INTO otpTable VALUES(?,?)",
+        [email, otp],
+        (error, response) => {
+          if (response.affectedRows == 1) {
+            // don't send otp here, send it via email
+            res.status(200).json({ SUCCESS: "OTP sent", OTP: otp });
+            return;
+          }
+        }
+      );
+    } catch (err) {
+      console.log(err);
       res.status(500).json({ ERROR: "Internal Server Error" });
       return;
     }
@@ -130,6 +153,7 @@ module.exports = {
           if (response.length == 1) {
             console.log(response[0]);
             res.status(200).json({ SUCCESS: "Login Successfull !" });
+            // send token also
             return;
           } else {
             res.status(400).json({ "BAD REQUEST": "Invalid credentials" });

@@ -1,15 +1,146 @@
-const { db } = require('../connection');
+const { db } = require("../connection");
 
-const accessTokenGenerator = require('../middleware/accessTokenGenerator');
-const accessTokenValidator = require('../middleware/accessTokenValidator');
-const otpTokenGenerator = require('../middleware/otpTokenGenerator');
-const otpTokenValidator = require('../middleware/otpTokenValidator');
-const otpGenerator = require('../middleware/otpGenerator');
+const accessTokenGenerator = require("../middleware/accessTokenGenerator");
+const accessTokenValidator = require("../middleware/accessTokenValidator");
+const otpTokenGenerator = require("../middleware/otpTokenGenerator");
+const otpTokenValidator = require("../middleware/otpTokenValidator");
+const otpGenerator = require("../middleware/otpGenerator");
 
-const crypto = require('crypto');
-const fs = require('fs');
-const validator = require('validator');
+const crypto = require("crypto");
+const fs = require("fs");
+const validator = require("../middleware/validator");
+const { response } = require("express");
+const { error } = require("console");
 
 module.exports = {
-    
-}
+  OTP_Generation: async (req, res) => {
+    const {
+      userName,
+      email,
+      password,
+      mobile1,
+      mobile2,
+      aadhar,
+      photo,
+      dri_licence,
+      role,
+    } = req.body;
+    console.log(
+      validator.REGEX_EMAIL.test(email),
+      validator.REGEX_MOBILE.test(mobile1),
+      validator.REGEX_MOBILE.test(mobile2),
+      validator.REGEX_AADHAR.test(aadhar),
+      validator.REGEX_NAME.test(userName)
+    );
+    if (
+      !validator.REGEX_EMAIL.test(email) ||
+      !validator.REGEX_MOBILE.test(mobile1) ||
+      !validator.REGEX_MOBILE.test(mobile2) ||
+      !validator.REGEX_AADHAR.test(aadhar) ||
+      !validator.REGEX_NAME.test(userName)
+    ) {
+      res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
+      return;
+    }
+    try {
+      db.query(
+        "SELECT * FROM users WHERE email = ?",
+        [email],
+        (error, response) => {
+          console.log(response);
+          if (response.length > 0) {
+            res
+              .status(400)
+              .json({ "USER EXISTS": "Email already registered!" });
+            return;
+          }
+        }
+      );
+      const otp = otpGenerator();
+      db.query("DELETE FROM otpTable WHERE userEmail = ?", [email]);
+      db.query(
+        "INSERT INTO otpTable VALUES(?,?)",
+        [email, otp],
+        (error, response) => {
+          if (response.affectedRows == 1) {
+            db.query(
+              "INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,0)",
+              [
+                userName,
+                password,
+                email,
+                mobile1,
+                mobile2,
+                aadhar,
+                photo,
+                dri_licence,
+                role,
+              ],
+              (error, response) => {
+                if (response.affectedRows == 1) {
+                  res.status(200).json({
+                    "USER ADDED": "Registered successfully!",
+                    OTP: otp,
+                  });
+                }
+              }
+            );
+          }
+        }
+      );
+    } catch (err) {
+      console.log(error);
+      res.status(500).json({ ERROR: "Internal Server Error" });
+      return;
+    }
+  },
+  OTP_Verify: async (req, res) => {
+    const { email, otp } = req.body;
+    try {
+      db.query(
+        "SELECT * FROM otpTable WHERE userEmail = ? AND otp = ?",
+        [email, otp],
+        (error, response) => {
+          if (response.length == 1) {
+            console.log(response);
+            db.query("DELETE FROM otpTable WHERE userEmail = ?", [email]);
+            db.query("UPDATE users SET isVerified = 1 WHERE email = ?", [
+              email,
+            ]);
+            res.status(200).json({ SUCCESS: "Verified Successfully !" });
+          } else {
+            res.status(201).json({ ERROR: "OTP not found" });
+            return;
+          }
+        }
+      );
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ ERROR: "Internal Server Error" });
+      return;
+    }
+  },
+  Login: async (req, res) => {
+    const { email, password } = req.body;
+    try {
+      db.query(
+        "SELECT * FROM users WHERE email = ? AND passwordHash = ?",
+        [email, password],
+        (error, response) => {
+          if (response.length == 1) {
+            console.log(response[0]);
+            res.status(200).json({ SUCCESS: "Login Successfull !" });
+            return;
+          } else {
+            res.status(400).json({ "BAD REQUEST": "Invalid credentials" });
+            return;
+          }
+        }
+      );
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ ERROR: "Internal Server Error" });
+      return;
+    }
+  },
+};

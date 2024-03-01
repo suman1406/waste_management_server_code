@@ -2,12 +2,13 @@ CREATE TABLE IF NOT EXISTS users (
     username varchar(50) NOT NULL,
     passwordHash varchar(256),
     email varchar(100) PRIMARY KEY,
-    mobile1 varchar(20),
-    mobile2 varchar(20),
+    mobile1 varchar(10),
+    mobile2 varchar(10),
     aadhar varchar(20),
     photo LONGBLOB,
     driving_licence varchar(20),
-    userRole INT NOT NULL
+    userRole INT NOT NULL,
+    isVerified INT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS category (
     categoryName VARCHAR(50) PRIMARY KEY,
@@ -15,14 +16,14 @@ CREATE TABLE IF NOT EXISTS category (
 );
 CREATE TABLE IF NOT EXISTS facility_incharge (
     inchargeName VARCHAR(50),
-    mobile1 VARCHAR(20),
-    mobile2 VARCHAR(20),
+    mobile1 VARCHAR(10),
+    mobile2 VARCHAR(10),
     email VARCHAR(100) PRIMARY KEY
 );
 CREATE TABLE IF NOT EXISTS facility (
     facilityID VARCHAR(50) PRIMARY KEY,
     categoryName VARCHAR(50),
-    email VARCHAR(50),
+    email VARCHAR(100),
     landline VARCHAR(20),
     facilityEmail VARCHAR(100),
     photo LONGBLOB,
@@ -43,8 +44,13 @@ CREATE TABLE IF NOT EXISTS wasteCollectionStatus (
     dateVisited DATE,
     timeVisited TIME,
     facilityID VARCHAR(50),
-    email VARCHAR(50),
+    email VARCHAR(100),
     PRIMARY KEY(dateVisited, facilityID),
     FOREIGN KEY (facilityID) REFERENCES facility(facilityID),
     FOREIGN KEY (email) REFERENCES users(email)
+);
+
+CREATE TABLE IF NOT EXISTS otpTable(
+    userEmail varchar(100),
+    otp varchar(255)
 );

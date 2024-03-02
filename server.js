@@ -16,7 +16,7 @@ const mainRouter = require("./routes/mainRouter");
 
 const establishConnection = require("./initializeConnection.js");
 // const { generateKey } = require('crypto');
-// const { generateKey } = require('./RSA/keyGen');
+const { generateKey } = require('./middleware/RSA/keyGen');
 const reInitDatabase = require("./schema/reInitDatabase");
 
 server.use(helmet());
@@ -30,16 +30,15 @@ if (cluster.isPrimary) {
   console.log(`[MESSAGE]: Primary ${process.pid} is running`);
   db = establishConnection();
 
-  // const initializeOne = () => {
-  //     if (fs.existsSync('./RSA/public_key.pem') && (fs.existsSync('./RSA/private_key.pem'))) {
-  //         console.log(`[MESSAGE]: RSA keys already exist`);
-  //     } else {
-  //         generateKey();
-  //     }
-
-  //     console.log('[MESSAGE]: Initialization Step 1 Complete');
-  // }
-
+  const initializeOne = () => {
+      if (fs.existsSync('./middleware/RSA/public_key.pem') && (fs.existsSync('./middleware/RSA/private_key.pem'))) {
+          console.log(`[MESSAGE]: RSA keys already exist`);
+      } else {
+          generateKey();
+      }
+      console.log('[MESSAGE]: Initialization Step 1 Complete');
+  }
+  initializeOne();
   // const initializeTwo = () => {
   //     reInitDatabase(db[0]);
   //     console.log('[MESSAGE]: Initialization Step 2 Complete');

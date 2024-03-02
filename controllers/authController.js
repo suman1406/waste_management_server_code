@@ -149,12 +149,25 @@ module.exports = {
       db.query(
         "SELECT * FROM users WHERE email = ? AND passwordHash = ?",
         [email, password],
-        (error, response) => {
+        async (error, response) => {
           if (response.length == 1) {
-            console.log(response[0]);
-            res.status(200).json({ SUCCESS: "Login Successfull !" });
-            // send token also
-            return;
+            console.log();
+            if (response[0].isVerified == 2) {
+              res
+                .status(201)
+                .json({ BLOCKED: "You are blocked, contact login master" });
+              return;
+            } else {
+              const token = await accessTokenGenerator({"userEmail":email,"userRole":response[0].userRole});
+              res
+                .status(200)
+                .json({
+                  SUCCESS: "Login Successfull !",
+                  userData: response[0],
+                  token: token
+                });
+              return;
+            }
           } else {
             res.status(400).json({ "BAD REQUEST": "Invalid credentials" });
             return;

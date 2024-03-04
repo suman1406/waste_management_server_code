@@ -7,6 +7,7 @@ const fs = require("fs");
 const secret_key = process.env.SECRET_KEY;
 
 async function accessTokenValidator(req, res, next) {
+  console.log(req.headers);
   const tokenHeader = req.headers.authorization;
   const token = tokenHeader && tokenHeader.split(" ")[1];
 
@@ -16,7 +17,7 @@ async function accessTokenValidator(req, res, next) {
 
   const public_key = fs.readFileSync("./middleware/RSA/public_key.pem");
   try {
-    const payLoad = await token.verify(token, public_key);
+    const payLoad = await verify(token, public_key);
     if (payLoad["secrey_key"] == secret_key) {
       req.userEmail = payLoad["userEmail"];
       req.userRole = payLoad["userRole"];
@@ -26,6 +27,7 @@ async function accessTokenValidator(req, res, next) {
       return res.status(401).json({ ERROR: "Unauthorized access" });
     }
   } catch (err) {
+    console.log(err)
     return res.status(401).json({ ERROR: "Unauthorized access" });
   }
 }

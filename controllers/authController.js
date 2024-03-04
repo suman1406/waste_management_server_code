@@ -25,13 +25,6 @@ module.exports = {
       dri_licence,
       role,
     } = req.body;
-    console.log(
-      validator.REGEX_EMAIL.test(email),
-      validator.REGEX_MOBILE.test(mobile1),
-      validator.REGEX_MOBILE.test(mobile2),
-      validator.REGEX_AADHAR.test(aadhar),
-      validator.REGEX_NAME.test(userName)
-    );
     if (
       !validator.REGEX_EMAIL.test(email) ||
       !validator.REGEX_MOBILE.test(mobile1) ||
@@ -118,7 +111,7 @@ module.exports = {
     }
   },
   OTP_Verify: async (req, res) => {
-    const { email, otp } = req.body;
+    const { email, password, otp } = req.body;
     try {
       db.query(
         "SELECT * FROM otpTable WHERE userEmail = ? AND otp = ?",
@@ -127,12 +120,12 @@ module.exports = {
           if (response.length == 1) {
             console.log(response);
             db.query("DELETE FROM otpTable WHERE userEmail = ?", [email]);
-            db.query("UPDATE users SET isVerified = 1 WHERE email = ?", [
-              email,
+            db.query("UPDATE users SET isVerified = 1 AND passwordHash = ? WHERE email = ?", [
+              email, password
             ]);
             res.status(200).json({ SUCCESS: "Verified Successfully !" });
           } else {
-            res.status(201).json({ ERROR: "OTP not found" });
+            res.status(401).json({ ERROR: "OTP not found" });
             return;
           }
         }
@@ -157,7 +150,12 @@ module.exports = {
                 .status(201)
                 .json({ BLOCKED: "You are blocked, contact login master" });
               return;
-            } else {
+            } else if(response[0].isVerified == 0){
+              return res
+              .status(401)
+              .json({ UNAUTHORIZED: "You are not verified" });
+            } 
+            else {
               const token = await accessTokenGenerator({"userEmail":email,"userRole":response[0].userRole});
               res
                 .status(200)

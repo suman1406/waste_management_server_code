@@ -147,7 +147,7 @@ module.exports = {
             console.log();
             if (response[0].isVerified == 2) {
               res
-                .status(201)
+                .status(401)
                 .json({ BLOCKED: "You are blocked, contact login master" });
               return;
             } else if(response[0].isVerified == 0){

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     mobile1 varchar(20),
     mobile2 varchar(20),
     aadhar varchar(20),
-    photo LONGBLOB,
+    photo varchar(225),
     driving_licence varchar(20),
     userRole INT NOT NULL,
 );
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS facility (
     inchargeID VARCHAR(50),
     landline VARCHAR(20),
     emailID VARCHAR(100),
-    photo LONGBLOB,
+    photo varchar(225),
     geoCoordinates VARCHAR(50),
     landmark VARCHAR(100),
     timeslot TIMEStamp,

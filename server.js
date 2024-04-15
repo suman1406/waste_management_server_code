@@ -16,13 +16,15 @@ const mainRouter = require("./routes/mainRouter");
 
 const establishConnection = require("./initializeConnection.js");
 // const { generateKey } = require('crypto');
-const { generateKey } = require('./middleware/RSA/keyGen');
+const { generateKey } = require('./RSA/keyGen.js');
 const reInitDatabase = require("./schema/reInitDatabase");
 
 server.use(helmet());
 server.use(express.json());
 server.use(cors());
 server.disable("x-powered-by");
+const bodyParser = require('body-parser');
+server.use(bodyParser.json({ limit: '50mb' }));
 
 server.use("/api", mainRouter);
 
@@ -31,12 +33,12 @@ if (cluster.isPrimary) {
   db = establishConnection();
 
   const initializeOne = () => {
-      if (fs.existsSync('./middleware/RSA/public_key.pem') && (fs.existsSync('./middleware/RSA/private_key.pem'))) {
-          console.log(`[MESSAGE]: RSA keys already exist`);
-      } else {
-          generateKey();
-      }
-      console.log('[MESSAGE]: Initialization Step 1 Complete');
+    if (fs.existsSync('./middleware/RSA/public_key.pem') && (fs.existsSync('./middleware/RSA/private_key.pem'))) {
+      console.log(`[MESSAGE]: RSA keys already exist`);
+    } else {
+      generateKey();
+    }
+    console.log('[MESSAGE]: Initialization Step 1 Complete');
   }
   initializeOne();
   // const initializeTwo = () => {
@@ -59,13 +61,18 @@ if (cluster.isPrimary) {
   });
 
   // Start Ngrok
-  // (async () => {
-  //     const url = await ngrok.connect({
-  //         addr: PORT,
-  //         authtoken: process.env.NGROK_AUTH_TOKEN,
-  //     });
-  //     console.log(`[MESSAGE]: Ngrok tunnel is live at ${url}`);
-  // })();
+  (async () => {
+    try {
+      const url = await ngrok.connect({
+        addr: PORT,
+        authtoken: process.env.NGROK_AUTH_TOKEN,
+      });
+      console.log(`[MESSAGE]: Ngrok tunnel is live at ${url}`);
+    } catch (error) {
+      console.error(`[ERROR]: Ngrok connection failed - ${error}`);
+    }
+  })();
+
 } else {
   server.listen(PORT, (err) => {
     if (err) {

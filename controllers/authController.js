@@ -3,6 +3,8 @@ const emailer = require("../email/emailer");
 const otpGenerator = require("../middleware/otpGenerator");
 const crypto = require("crypto");
 const validator = require("../middleware/validator");
+const accessTokenGenerator = require("../middleware/accessTokenGenerator");
+const createOtpToken = require("../middleware/otpTokenGenerator");
 
 module.exports = {
   OTP_Generation_SignUp: async (req, res) => {
@@ -199,13 +201,12 @@ module.exports = {
           }
 
           // Send mail
-          await emailer.loginOTP({
-            email: user[0].email,
-            subject: "Login OTP",
-            text: `Your OTP for login is: ${otp}`,
-          });
+          await emailer.sendLoginOTP(
+            user[0].email,
+            otp
+          );
 
-          const token = await otpTokenGenerator({
+          const token = await createOtpToken({
             "email": email,
             "userRole": user[0].userRole,
           });

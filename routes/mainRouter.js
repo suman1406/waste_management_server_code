@@ -12,6 +12,6 @@ router.use("/auth",authRouter);
 router.use("/user",userRouter);
 router.use("/facility", facilityRouter);
 router.use("/stat", wasteStatRouter);
-router.use("/catefory", categoryRouter);
+router.use("/category", categoryRouter);
 
 module.exports = router

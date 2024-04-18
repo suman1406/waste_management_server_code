@@ -1,7 +1,6 @@
 DROP DATABASE IF EXISTS wmapp;
 CREATE DATABASE wmapp;
 USE wmapp;
-
 CREATE TABLE IF NOT EXISTS users (
     username varchar(50) NOT NULL,
     password varchar(256),
@@ -53,13 +52,32 @@ CREATE TABLE IF NOT EXISTS wasteCollectionStatus (
     FOREIGN KEY (facilityID) REFERENCES facility(facilityID),
     FOREIGN KEY (email) REFERENCES users(email)
 );
-
 CREATE TABLE IF NOT EXISTS otpTable (
     email VARCHAR(100),
     otp VARCHAR(255),
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-INSERT INTO users (username, password, email, mobile1, mobile2, aadhar, photo, driving_licence, userRole, isVerified) 
-VALUES 
-('john_doe', 'b2867617492e26c338ab49f72afabc984d798b59755a27e312b953716ae964d7', 'john.doe@example.com', '1234567890', '0987654321', '123456789012', '12345678765432', 'DL123456', 1, 1);
+INSERT INTO users (
+        username,
+        password,
+        email,
+        mobile1,
+        mobile2,
+        aadhar,
+        photo,
+        driving_licence,
+        userRole,
+        isVerified
+    )
+VALUES (
+        'john_doe',
+        '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+        'psuman1406@gmail.com',
+        '1234567890',
+        '0987654321',
+        '123456789012',
+        '12345678765432',
+        'DL123456',
+        1,
+        1
+    );

@@ -13,3 +13,5 @@ async function createOtpToken(data) {
         console.log(error);
     }
 }
+
+exports.module = createOtpToken;

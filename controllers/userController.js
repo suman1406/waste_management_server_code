@@ -2,6 +2,7 @@ const { db } = require("../connection");
 const validator = require("../middleware/validator");
 const emailer = require("../email/emailer");
 const otpGenerator = require("../middleware/otpGenerator");
+const crypto = require('crypto');
 
 module.exports = {
   updateUser: async (req, res) => {
@@ -85,11 +86,9 @@ module.exports = {
             .query("DELETE FROM users WHERE email = ?", [email]);
           if (response1.affectedRows == 1) {
             // Send email notification
-            await emailer.accountDeactivated({
+            await emailer.sendAccountDeactivatedEmail(
               email,
-              subject: "Account Deleted",
-              text: "Your account has been deleted successfully.",
-            });
+            );
 
             return res
               .status(200)
@@ -153,11 +152,14 @@ module.exports = {
             password += charset[randomIndex];
           }
 
+          // Hashing password using SHA-256
+          const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
           const [response1] = await db
             .promise()
             .query(`INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?,0)`, [
               userName,
-              password,
+              hashedPassword,
               email,
               mobile1,
               mobile2,
@@ -166,13 +168,14 @@ module.exports = {
               dri_licence,
               role,
             ]);
+            console.log("###", email, userName, password);
           if (response1.affectedRows == 1) {
             // Send email with password
-            await emailer.userCreated({
+            await emailer.sendUserCreatedEmail(
               email,
-              subject: "Welcome to Our Platform",
-              text: `Your account has been created successfully. Your password is: ${password}`,
-            });
+              userName,
+              password
+            );
 
             return res
               .status(200)
@@ -191,26 +194,34 @@ module.exports = {
   getUser: async (req, res) => {
     const userRole = req.body.userRole;
     const currRole = req.userRole;
+    const email = req.userEmail;
+
+    console.log("##", req.userEmail);
+
+    console.log("##", req.body);
+
+    console.log(currRole);
 
     if (currRole == 0 || currRole == 1) {
 
       if (
-        userRole != 0 || userRole != 1 || userRole != 2
+        userRole != 0 && userRole != 1 && userRole != 2
       ) {
-        res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
-        return;
+        return res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
       }
 
       try {
         const [response] = await db
           .promise()
-          .query("SELECT email FROM users WHERE email = ?", [email]);
+          .query("SELECT * FROM users WHERE email = ?", [email]);
+
+          console.log(response);
 
         if (response.length != 0) {
           const [result] = await db.promise().query("SELECT * FROM users WHERE userRole = ?", [userRole]);
           console.log("##", result);
 
-          if (result.affectedRows == 1) {
+          if (result.affectedRows != 0) {
             return res.status(200).json({ SUCCESS: "User found", result });
           } else {
             return res.status(400).json({ "BAD REQUEST": "User not found" });

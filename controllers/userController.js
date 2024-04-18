@@ -54,11 +54,9 @@ module.exports = {
           console.log("###", response1);
           if (response1.affectedRows == 1) {
             // Send email notification
-            await emailer.sendMail({
+            await emailer.sendUpdateUserDetailsEmail(
               email,
-              subject: "Profile Updated",
-              text: "Your profile information has been updated successfully.",
-            });
+            );
 
             return res.status(200).json({ SUCCESS: "Information Updated !" });
           }

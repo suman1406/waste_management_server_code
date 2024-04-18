@@ -92,51 +92,65 @@ module.exports = {
     const { email } = req.body;
     const otp = otpGenerator();
 
+    console.log(email, otp); // Log email and OTP for debugging purposes
+
     try {
-      await db.promise().query("DELETE FROM otpTable WHERE userEmail = ?", [
-        email,
-      ]);
+      // Delete any existing OTP for the provided email
+      await db.promise().query("DELETE FROM otpTable WHERE email = ?", [email]);
 
-      const insertOtpResponse = await db
-        .promise()
-        .query("INSERT INTO otpTable VALUES(?,?)", [email, otp]);
+      // Insert the new OTP into the database
+      const insertOtpResponse = await db.promise().query("INSERT INTO otpTable (email, otp) VALUES (?, ?)", [email, otp]);
 
-      if (insertOtpResponse.affectedRows === 1) {
+      // Check if the OTP was successfully inserted
+      if (insertOtpResponse[0].affectedRows === 1) {
         // Send OTP via email
-        await emailer.resetPasswordOTP({
+        await emailer.sendResetPasswordOTP(
           email,
-          subject: "Password Reset OTP",
-          text: `Your OTP for password reset is: ${otp}`,
-        });
+          otp
+        );
 
-        res.status(200).json({ SUCCESS: "OTP sent" });
+        console.log("OTP sent"); // Log that OTP has been sent for debugging purposes
+
+        // Respond with success message
+        return res.status(200).json({ SUCCESS: "OTP sent" });
+      } else {
+        // If affectedRows is not 1, something went wrong with insertion
+        console.error("Failed to insert OTP into database");
+        return res.status(500).json({ ERROR: "Failed to insert OTP into database" });
       }
     } catch (err) {
+      // Catch any errors that occur during the process
       console.error(err);
-      res.status(500).json({ ERROR: "Internal Server Error" });
+      return res.status(500).json({ ERROR: "Internal Server Error" });
     }
   },
 
   OTP_Verify: async (req, res) => {
     const { email, password, otp } = req.body;
 
+    console.log(email, password, otp);
+
     try {
       const otpResponse = await db
         .promise()
         .query(
-          "SELECT * FROM otpTable WHERE userEmail = ? AND otp = ?",
+          "SELECT * FROM otpTable WHERE email = ? AND otp = ?",
           [email, otp]
         );
 
-      if (otpResponse.length === 1) {
+      console.log(otpResponse);
+
+      if (otpResponse[0].length === 1) {
         await db.promise().query(
-          "DELETE FROM otpTable WHERE userEmail = ?",
+          "DELETE FROM otpTable WHERE email = ?",
           [email]
         );
 
+        const passwordHashed = crypto.createHash('sha256').update(password).digest('hex');
+
         await db.promise().query(
-          "UPDATE users SET isVerified = 1, passwordHash = ? WHERE email = ?",
-          [password, email]
+          "UPDATE users SET isVerified = 1, password = ? WHERE email = ?",
+          [passwordHashed, email]
         );
 
         res.status(200).json({ SUCCESS: "Verified Successfully !" });

@@ -73,6 +73,27 @@ module.exports = {
         });
     },
 
+    sendUpdateUserDetailsEmail: (email) => {
+        var mailOptions = {
+            from: {
+                name: 'i6',
+                address: 'psuman1406@gmail.com',
+            },
+            to: email,
+            subject: 'User Details Updated',
+            html: 'User details have been updated. Please log in to your account for more information.'
+        };
+
+        // Send email
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.error('Error sending updated user details email:', error);
+            } else {
+                console.log('Updated user details email sent to: ' + email);
+            }
+        });
+    },
+
     sendAccountDeactivatedEmail: (email) => {
         var mailOptions = {
             from: {

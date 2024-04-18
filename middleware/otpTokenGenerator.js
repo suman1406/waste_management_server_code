@@ -7,11 +7,9 @@ async function createOtpToken(data) {
     data.secret_key = secret_key;
     const private_key = fs.readFileSync('./RSA/private_key.pem');
     var token = "";
-    try {
-        token = await sign(data, private_key, { expiresIn: '5 m' });
-    } catch (error) {
-        console.log(error);
-    }
+    token = await sign(data, private_key, { expiresIn: '5 m' });
+
+    return token;
 }
 
-exports.module = createOtpToken;
+module.exports = createOtpToken;

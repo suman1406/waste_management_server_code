@@ -53,6 +53,34 @@ const TEMPLATE_LOGIN_OTP = (email, otp) => {
     </html>`;
 }
 
+// Template for updated user details email
+const TEMPLATE_UPDATE_USER_DETAILS = () => {
+    return `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Updated User Details</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+        </style>
+    </head>
+    <body>
+        <p>Dear User,</p>
+        <br />
+        <p>Your user details have been updated successfully.</p>
+        <p>If you did not make these changes, please contact our support team immediately.</p>
+        <br />
+        <p>Regards,</p>
+        <p>Platform Team</p>
+    </body>
+    </html>`;
+}
+
 // Template for account deactivated email
 const TEMPLATE_ACCOUNT_DEACTIVATED = (email) => {
     return `<!DOCTYPE html>
@@ -85,5 +113,6 @@ const TEMPLATE_ACCOUNT_DEACTIVATED = (email) => {
 module.exports = {
     TEMPLATE_RESET_PASSWORD_OTP,
     TEMPLATE_LOGIN_OTP,
-    TEMPLATE_ACCOUNT_DEACTIVATED
+    TEMPLATE_ACCOUNT_DEACTIVATED,
+    TEMPLATE_UPDATE_USER_DETAILS
 };

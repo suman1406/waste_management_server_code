@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS facility_incharge (
 CREATE TABLE IF NOT EXISTS facility (
     facilityID VARCHAR(50) PRIMARY KEY,
     categoryName VARCHAR(50),
-    email VARCHAR(100),
+    inchargeEmail VARCHAR(100),
     landline VARCHAR(20),
     facilityEmail VARCHAR(100),
     photo varchar(255),
@@ -39,12 +39,12 @@ CREATE TABLE IF NOT EXISTS facility (
     bank_acc_holder varchar(50),
     ifsc_code varchar(20),
     FOREIGN KEY (categoryName) REFERENCES category(categoryName),
-    FOREIGN KEY (email) REFERENCES facility_incharge(email)
+    FOREIGN KEY (inchargeEmail) REFERENCES facility_incharge(email)
 );
 CREATE TABLE IF NOT EXISTS wasteCollectionStatus (
     statusID VARCHAR(50),
     statusName VARCHAR(50),
-    dateVisited DATE,
+    dateVisited varchar(10),
     timeVisited TIME,
     facilityID VARCHAR(50),
     email VARCHAR(100),

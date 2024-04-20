@@ -7,8 +7,7 @@ module.exports = {
 
         // Validate inputs
         if (
-            !validator.validateCategoryName(categoryName) ||
-            !validator.validateBasicCostCharge(basicCostCharge)
+            categoryName == null || categoryName === "" || basicCostCharge == null || basicCostCharge === "" || categoryName == undefined || basicCostCharge == undefined
         ) {
             return res.status(400).json({ error: "Invalid input data" });
         }
@@ -34,7 +33,7 @@ module.exports = {
             if (result.affectedRows === 1) {
                 const [newCategory] = await db
                     .promise()
-                    .query("SELECT * FROM category WHERE categoryID = ?", [result.insertId]);
+                    .query("SELECT * FROM category WHERE categoryName = ?", [categoryName]);
                 return res.status(201).json({ message: "Category created successfully", category: newCategory[0] });
             } else {
                 console.error("Failed to create category");
@@ -59,13 +58,13 @@ module.exports = {
     },
 
     deleteCategory: async (req, res) => {
-        const { categoryID } = req.params;
+        const { categoryName } = req.body;
 
         try {
             // Check if category exists
             const [existingCategory] = await db
                 .promise()
-                .query("SELECT * FROM category WHERE categoryID = ?", [categoryID]);
+                .query("SELECT * FROM category WHERE categoryName = ?", [categoryName]);
 
             if (existingCategory.length === 0) {
                 return res.status(404).json({ error: "Category not found" });
@@ -74,7 +73,7 @@ module.exports = {
             // Delete category from the database
             const [result] = await db
                 .promise()
-                .query("DELETE FROM category WHERE categoryID = ?", [categoryID]);
+                .query("DELETE FROM category WHERE categoryName = ?", [categoryName]);
 
             if (result.affectedRows === 1) {
                 return res.status(200).json({ message: "Category deleted successfully" });

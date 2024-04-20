@@ -2,28 +2,22 @@ const { db } = require("../connection");
 const validator = require("../middleware/validator");
 
 module.exports = {
+
     createWasteCollectionStatus: async (req, res) => {
         const {
-            statusID,
             statusName,
-            dateVisited,
-            timeVisited,
             facilityID,
-            userID,
+            email,
         } = req.body;
 
-        // Validate inputs
-        if (
-            !validator.validateStatusID(statusID) ||
-            !validator.validateStatusName(statusName) ||
-            !validator.validateDate(dateVisited) ||
-            !validator.validateTime(timeVisited) ||
-            !validator.validateFacilityID(facilityID) ||
-            !validator.validateUserID(userID)
-            // Add other validations as needed
-        ) {
-            return res.status(400).json({ error: "Invalid input data" });
-        }
+        const prefix = 'WC';
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        const statusID = `${prefix}_${timestamp}_${randomSuffix}`;
+
+        const currentDate = new Date().toISOString().split('T')[0];
+        console.log(currentDate);
+        const currentTime = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour12: false }).split(',')[1].trim();
 
         try {
             // Insert new waste collection status into the database
@@ -31,21 +25,21 @@ module.exports = {
                 .promise()
                 .query(
                     `INSERT INTO wasteCollectionStatus (
-            statusID, 
-            statusName, 
-            dateVisited, 
-            timeVisited, 
-            facilityID, 
-            userID
-          ) 
-          VALUES (?, ?, ?, ?, ?, ?)`,
+                    statusID, 
+                    statusName, 
+                    dateVisited, 
+                    timeVisited, 
+                    facilityID, 
+                    email
+                ) 
+                VALUES (?, ?, ?, ?, ?, ?)`,
                     [
                         statusID,
                         statusName,
-                        dateVisited,
-                        timeVisited,
+                        currentDate,
+                        currentTime,
                         facilityID,
-                        userID,
+                        email,
                     ]
                 );
 
@@ -76,13 +70,25 @@ module.exports = {
     },
 
     deleteWasteCollectionStatus: async (req, res) => {
-        const { statusID } = req.params;
+        const { statusName, dateVisited, timeVisited, facilityID, email } = req.body;
+
+        // Validate inputs
+        if (
+            !statusName || statusName === "" ||
+            !dateVisited || dateVisited === "" ||
+            !timeVisited || timeVisited === "" ||
+            !facilityID || facilityID === "" ||
+            !email || email === "" ||
+            !validator.REGEX_EMAIL.test(email)
+        ) {
+            return res.status(400).json({ error: "Invalid input data" });
+        }
 
         try {
             // Check if waste collection status exists
             const [existingStatus] = await db
                 .promise()
-                .query("SELECT * FROM wasteCollectionStatus WHERE statusID = ?", [statusID]);
+                .query("SELECT * FROM wasteCollectionStatus WHERE statusName = ? AND dateVisited = ? AND timeVisited = ? AND facilityID = ? AND email = ?", [statusName, dateVisited, timeVisited, facilityID, email]);
 
             if (existingStatus.length === 0) {
                 return res.status(404).json({ error: "Waste collection status not found" });
@@ -91,7 +97,7 @@ module.exports = {
             // Delete waste collection status from the database
             const [result] = await db
                 .promise()
-                .query("DELETE FROM wasteCollectionStatus WHERE statusID = ?", [statusID]);
+                .query("DELETE FROM wasteCollectionStatus WHERE statusName = ? AND dateVisited = ? AND timeVisited = ? AND facilityID = ? AND email = ?", [statusName, dateVisited, timeVisited, facilityID, email]);
 
             if (result.affectedRows === 1) {
                 return res.status(200).json({ message: "Waste collection status deleted successfully" });
@@ -103,5 +109,5 @@ module.exports = {
             console.error("Error deleting waste collection status:", error);
             return res.status(500).json({ error: "Internal server error" });
         }
-    },
+    }
 };

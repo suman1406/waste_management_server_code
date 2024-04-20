@@ -4,10 +4,10 @@ const validator = require("../middleware/validator");
 module.exports = {
     createFacility: async (req, res) => {
         const {
-            categoryID,
-            inchargeID,
+            categoryName,
+            inchargeEmail,
             landline,
-            emailID,
+            facilityEmail,
             photo,
             geoCoordinates,
             landmark,
@@ -20,47 +20,75 @@ module.exports = {
         } = req.body;
 
         // Validate inputs
-        if (
-            !validator.validateCategoryID(categoryID) ||
-            !validator.validateInchargeID(inchargeID) ||
-            !validator.validateLandline(landline) ||
-            !validator.validateEmail(emailID) ||
-            !validator.validateGeoCoordinates(geoCoordinates) ||
-            !validator.validateTimeslot(timeslot) ||
-            !validator.validateGPayNumber(gpay_number) ||
-            !validator.validateBankAccount(bank_acc) ||
-            !validator.validateIFSCCode(ifsc_code)
-            // Add other validations as needed
-        ) {
+        if (!categoryName || !inchargeEmail || !landline || !facilityEmail || !photo || !geoCoordinates || !timeslot || !description || !gpay_number || !bank_acc || !bank_acc_holder || !ifsc_code) {
             return res.status(400).json({ error: "Invalid input data" });
         }
 
         try {
+            // Check if category exists
+            const [category] = await db.promise().query("SELECT categoryName FROM category WHERE categoryName = ?", [categoryName]);
+            if (category.length === 0) {
+                return res.status(404).json({ error: "Category not found" });
+            }
+
+            // Check if facility already exists
+            const [existingFacility] = await db.promise().query("SELECT * FROM facility WHERE categoryName = ? AND inchargeEmail = ? AND landline = ? AND facilityEmail = ? AND photo = ? AND geoCoordinates = ? AND landmark = ? AND timeslot = ? AND description = ? AND gpay_number = ? AND bank_acc = ? AND bank_acc_holder = ? AND ifsc_code = ?", [
+                categoryName,
+                inchargeEmail,
+                landline,
+                facilityEmail,
+                photo,
+                geoCoordinates,
+                landmark,
+                timeslot,
+                description,
+                gpay_number,
+                bank_acc,
+                bank_acc_holder,
+                ifsc_code,
+            ]);
+            if (existingFacility.length > 0) {
+                return res.status(400).json({ error: "Facility already exists" });
+            }
+
+            // Generate facilityID
+            const prefix = 'FAC'; // Prefix for facility IDs
+            const timestamp = Date.now(); // Current timestamp
+            const randomSuffix = Math.floor(Math.random() * 1000); // Random number between 0 and 999
+            const facilityID = `${prefix}_${timestamp}_${randomSuffix}`;
+
+            // Validate inchargeEmail
+            if (!validator.REGEX_EMAIL.test(inchargeEmail)) {
+                return res.status(400).json({ error: "Invalid incharge email" });
+            }
+
             // Insert new facility into the database
             const [result] = await db
                 .promise()
                 .query(
                     `INSERT INTO facility (
-            categoryID, 
-            inchargeID, 
-            landline, 
-            emailID, 
-            photo, 
-            geoCoordinates, 
-            landmark, 
-            timeslot, 
-            description, 
-            gpay_number, 
-            bank_acc, 
-            bank_acc_holder, 
-            ifsc_code
-          ) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    facilityID,
+                    categoryName, 
+                    inchargeEmail,
+                    landline, 
+                    facilityEmail, 
+                    photo, 
+                    geoCoordinates, 
+                    landmark, 
+                    timeslot, 
+                    description, 
+                    gpay_number, 
+                    bank_acc, 
+                    bank_acc_holder, 
+                    ifsc_code
+                ) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
-                        categoryID,
-                        inchargeID,
+                        facilityID,
+                        categoryName,
+                        inchargeEmail,
                         landline,
-                        emailID,
+                        facilityEmail,
                         photo,
                         geoCoordinates,
                         landmark,
@@ -98,12 +126,12 @@ module.exports = {
     },
 
     editFacility: async (req, res) => {
-        const { facilityID } = req.params;
         const {
-            categoryID,
-            inchargeID,
+            facilityID,
+            categoryName,
+            inchargeEmail,
             landline,
-            emailID,
+            facilityEmail,
             photo,
             geoCoordinates,
             landmark,
@@ -116,17 +144,16 @@ module.exports = {
         } = req.body;
 
         // Validate inputs
-        if (
-            !validator.validateCategoryID(categoryID) ||
-            !validator.validateInchargeID(inchargeID) ||
-            !validator.validateLandline(landline) ||
-            !validator.validateEmail(emailID) ||
-            !validator.validateGeoCoordinates(geoCoordinates) ||
-            !validator.validateTimeslot(timeslot) ||
-            !validator.validateGPayNumber(gpay_number) ||
-            !validator.validateBankAccount(bank_acc) ||
-            !validator.validateIFSCCode(ifsc_code)
-            // Add other validations as needed
+        if (facilityID == null || facilityID === "" ||
+            categoryName == null || categoryName === "" ||
+            inchargeEmail == null || inchargeEmail === "" ||
+            landline == null || landline === "" ||
+            facilityEmail == null || facilityEmail === "" ||
+            geoCoordinates == null || geoCoordinates === "" ||
+            timeslot == null || timeslot === "" ||
+            gpay_number == null || gpay_number === "" ||
+            bank_acc == null || bank_acc === "" ||
+            ifsc_code == null || ifsc_code === ""
         ) {
             return res.status(400).json({ error: "Invalid input data" });
         }
@@ -146,26 +173,26 @@ module.exports = {
                 .promise()
                 .query(
                     `UPDATE facility 
-          SET 
-            categoryID = ?, 
-            inchargeID = ?, 
-            landline = ?, 
-            emailID = ?, 
-            photo = ?, 
-            geoCoordinates = ?, 
-            landmark = ?, 
-            timeslot = ?, 
-            description = ?, 
-            gpay_number = ?, 
-            bank_acc = ?, 
-            bank_acc_holder = ?, 
-            ifsc_code = ? 
-          WHERE facilityID = ?`,
+                SET 
+                categoryName = ?, 
+                inchargeEmail = ?, 
+                landline = ?, 
+                facilityEmail = ?, 
+                photo = ?, 
+                geoCoordinates = ?, 
+                landmark = ?, 
+                timeslot = ?, 
+                description = ?, 
+                gpay_number = ?, 
+                bank_acc = ?, 
+                bank_acc_holder = ?, 
+                ifsc_code = ? 
+                WHERE facilityID = ?`,
                     [
-                        categoryID,
-                        inchargeID,
+                        categoryName,
+                        inchargeEmail,
                         landline,
-                        emailID,
+                        facilityEmail,
                         photo,
                         geoCoordinates,
                         landmark,
@@ -192,7 +219,7 @@ module.exports = {
     },
 
     deleteFacility: async (req, res) => {
-        const { facilityID } = req.params;
+        const { facilityID } = req.body;
 
         try {
             // Check if facility exists
@@ -200,7 +227,7 @@ module.exports = {
                 .promise()
                 .query("SELECT * FROM facility WHERE facilityID = ?", [facilityID]);
 
-            if (existingFacility.length === 0) {
+            if (existingFacility.length == 0) {
                 return res.status(404).json({ error: "Facility not found" });
             }
 

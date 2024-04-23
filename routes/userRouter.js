@@ -4,8 +4,9 @@ const userController = require("../controllers/userController");
 const accessTokenValidator = require("../middleware/accessTokenValidator");
 
 router.put("/updateUser", accessTokenValidator, userController.updateUser);
-router.delete("/deleteUser",accessTokenValidator,userController.deleteUser);
-router.post("/addUser",accessTokenValidator,userController.addUser);
-router.get("/getUser",accessTokenValidator,userController.getUser);
+router.delete("/deleteUser", accessTokenValidator, userController.deleteUser);
+router.post("/addUser", accessTokenValidator, userController.addUser);
+router.get("/getUser", accessTokenValidator, userController.getUser);
+router.get("/getUserCount", accessTokenValidator, userController.getUserCount);
 
 module.exports = router;

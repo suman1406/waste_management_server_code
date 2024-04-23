@@ -1,4 +1,6 @@
-// Template for user created email
+const nodemailer = require('nodemailer');
+
+// Function to generate the user creation email template
 const TEMPLATE_USER_CREATED = (email, userName, password) => {
     return `<!DOCTYPE html>
     <html lang="en">
@@ -28,6 +30,35 @@ const TEMPLATE_USER_CREATED = (email, userName, password) => {
         <p>Platform Team</p>
     </body>
     </html>`;
-}
+};
 
-module.exports = TEMPLATE_USER_CREATED;
+// Configure the Nodemailer transporter
+const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+        user: 'saisimhadri2207@gmail.com',  // Replace with your email
+        pass: 'kght pxda coha ghra' // Use App Password instead of actual password
+    }
+});
+
+// Function to send the email
+const sendUserCreatedEmail = async (email, userName, password) => {
+    const mailOptions = {
+        from: {
+            name: 'i6',
+            address: 'saisimhadri2207@gmail.com',
+        },
+        to: email,
+        subject: 'Welcome to Our Platform',
+        html: TEMPLATE_USER_CREATED(email, userName, password),
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`User Created Email sent to: ${email}, Message ID: ${info.messageId}`);
+    } catch (error) {
+        console.error('Error sending user created email:', error);
+    }
+};
+
+module.exports = { TEMPLATE_USER_CREATED, sendUserCreatedEmail };

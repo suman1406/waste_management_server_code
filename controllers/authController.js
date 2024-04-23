@@ -1,10 +1,12 @@
 const { db } = require("../connection");
-const emailer = require("../email/emailer");
 const otpGenerator = require("../middleware/otpGenerator");
+const bcrypt = require('bcrypt'); // For bcrypt
+const emailer = require("../email/emailer");  // Import emailer.js
 const crypto = require("crypto");
 const validator = require("../middleware/validator");
 const accessTokenGenerator = require("../middleware/accessTokenGenerator");
 const createOtpToken = require("../middleware/otpTokenGenerator");
+const { TEMPLATE_USER_CREATED } = require('../email/emailer');
 
 module.exports = {
   OTP_Generation_SignUp: async (req, res) => {
@@ -14,9 +16,9 @@ module.exports = {
       password,
       mobile1,
       mobile2,
-      aadhar,
       photo,
-      dri_licence,
+      driving_license,
+      aadhar,
       role,
     } = req.body;
 
@@ -24,67 +26,104 @@ module.exports = {
     if (
       !validator.REGEX_EMAIL.test(email) ||
       !validator.REGEX_MOBILE.test(mobile1) ||
-      !validator.REGEX_MOBILE.test(mobile2) ||
-      !validator.REGEX_AADHAR.test(aadhar) ||
+      (mobile2 && !validator.REGEX_MOBILE.test(mobile2)) ||
+      (aadhar && !validator.REGEX_AADHAR.test(aadhar)) ||
       !validator.REGEX_NAME.test(userName)
     ) {
-      res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
-      return;
+      return res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
     }
 
     try {
-      const existingUser = await db.promise().query(
-        "SELECT * FROM users WHERE email = ?",
+      // Check if the user already exists
+      const [existingUser] = await db.promise().query(
+        "SELECT user_id FROM users WHERE email = ?",
         [email]
       );
 
       if (existingUser.length > 0) {
-        res.status(400).json({ "USER EXISTS": "Email already registered!" });
-        return;
+        return res.status(400).json({ "user EXISTS": "Email already registered!" });
       }
 
-      const otp = otpGenerator();
+      // Hash the password before storing
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-      await db.promise().query("DELETE FROM otpTable WHERE userEmail = ?", [
-        email,
-      ]);
+      // Insert user details into user table
+      const [insertUserResponse] = await db.promise().query(
+        "INSERT INTO users (name, password_hash, email, mobile1, mobile2, photo, role, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [userName, hashedPassword, email, mobile1, mobile2, photo, role, false]
+      );
 
-      const insertOtpResponse = await db
-        .promise()
-        .query("INSERT INTO otpTable VALUES(?,?)", [email, otp]);
+      if (insertUserResponse.affectedRows === 1) {
+        const userId = insertUserResponse.insertId; // Get the generated user_id
 
-      if (insertOtpResponse.affectedRows === 1) {
-        const insertUserResponse = await db.promise().query(
-          "INSERT INTO users VALUES(?,?,?,?,?,?,?,?,?,0)",
-          [
-            userName,
-            password,
-            email,
-            mobile1,
-            mobile2,
-            aadhar,
-            photo,
-            dri_licence,
-            role,
-          ]
+        // If role is 'Driver', insert into Drivers table
+        if (role === "Driver") {
+          await db.promise().query(
+            "INSERT INTO drivers (user_id, aadhar, driving_license) VALUES (?, ?, ?)",
+            [userId, aadhar, driving_license]
+          );
+        }
+
+        // Generate OTP
+        const otp = otpGenerator();
+
+        // Insert OTP into OTP table
+        await db.promise().query(
+          "INSERT INTO otp (user_id, otp_hash, created_at) VALUES (?, ?, NOW())",
+          [userId, otp]
         );
 
-        if (insertUserResponse.affectedRows === 1) {
-          // Send OTP via email
-          await emailer.userCreated({
-            email,
-            subject: "Welcome! Verify Your Email",
-            text: `Your OTP for email verification is: ${otp}`,
-          });
+        // Send OTP via email
+        await emailer.sendUserCreatedEmail(email, userName, password);
 
-          res.status(200).json({
-            "USER ADDED": "Registered successfully! OTP sent to email.",
-          });
-        }
+        return res.status(200).json({
+          "user ADDED": "Registered successfully! OTP sent to email.",
+        });
+      } else {
+        return res.status(500).json({ ERROR: "User registration failed" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ ERROR: "Internal Server Error" });
+      return res.status(500).json({ ERROR: "Internal Server Error" });
+    }
+  },
+
+  OTP_Verification: async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+      // Fetch OTP and created_at timestamp
+      const [otpRows] = await db.promise().query(
+        "SELECT otp_hash, created_at FROM otp WHERE user_id = (SELECT user_id FROM users WHERE email = ?)",
+        [email]
+      );
+
+      if (otpRows.length === 0) {
+        return res.status(400).json({ ERROR: "Invalid OTP or expired" });
+      }
+
+      const { otp_hash, created_at } = otpRows[0];
+
+      // Check if the OTP is expired (more than 60 seconds old)
+      const createdAtTime = new Date(created_at);
+      const currentTime = new Date();
+      const timeDiff = (currentTime - createdAtTime) / 1000; // Difference in seconds
+
+      if (timeDiff > 20) {
+        await db.promise().query("DELETE FROM otp WHERE user_id = (SELECT user_id FROM users WHERE email = ?)", [email]);
+        return res.status(400).json({ ERROR: "OTP expired. Request a new one." });
+      }
+
+      // If OTP matches
+      if (otp === otp_hash) {
+        await db.promise().query("DELETE FROM otp WHERE user_id = (SELECT user_id FROM users WHERE email = ?)", [email]);
+        return res.status(200).json({ SUCCESS: "OTP verified successfully" });
+      } else {
+        return res.status(400).json({ ERROR: "Invalid OTP" });
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ ERROR: "Internal Server Error" });
     }
   },
 
@@ -92,74 +131,50 @@ module.exports = {
     const { email } = req.body;
     const otp = otpGenerator();
 
-    console.log(email, otp); // Log email and OTP for debugging purposes
+    console.log(email, otp); // Debugging log
 
     try {
-      // Delete any existing OTP for the provided email
-      await db.promise().query("DELETE FROM otpTable WHERE email = ?", [email]);
+      // Fetch user_id using the email
+      const [userRows] = await db.promise().query(
+        "SELECT user_id FROM users WHERE email = ?",
+        [email]
+      );
 
-      // Insert the new OTP into the database
-      const insertOtpResponse = await db.promise().query("INSERT INTO otpTable (email, otp) VALUES (?, ?)", [email, otp]);
+      // If user does not exist, return an error
+      if (userRows.length === 0) {
+        return res.status(404).json({ ERROR: "User not found" });
+      }
+
+      const user_id = userRows[0].user_id;
+
+      // Delete any existing OTP for this user_id
+      await db.promise().query(
+        "DELETE FROM otp WHERE user_id = ?",
+        [user_id]
+      );
+
+      // Insert the new OTP into the OTP table with created_at
+      const insertOtpResponse = await db.promise().query(
+        "INSERT INTO otp (user_id, otp_hash, created_at) VALUES (?, ?, NOW())",
+        [user_id, otp]
+      );
 
       // Check if the OTP was successfully inserted
       if (insertOtpResponse[0].affectedRows === 1) {
         // Send OTP via email
-        await emailer.sendResetPasswordOTP(
-          email,
-          otp
-        );
+        await emailer.sendResetPasswordOTP(email, otp);
 
-        console.log("OTP sent"); // Log that OTP has been sent for debugging purposes
+        console.log("OTP sent"); // Debugging log
 
         // Respond with success message
         return res.status(200).json({ SUCCESS: "OTP sent" });
       } else {
-        // If affectedRows is not 1, something went wrong with insertion
         console.error("Failed to insert OTP into database");
         return res.status(500).json({ ERROR: "Failed to insert OTP into database" });
       }
     } catch (err) {
-      // Catch any errors that occur during the process
       console.error(err);
       return res.status(500).json({ ERROR: "Internal Server Error" });
-    }
-  },
-
-  OTP_Verify: async (req, res) => {
-    const { email, password, otp } = req.body;
-
-    console.log(email, password, otp);
-
-    try {
-      const otpResponse = await db
-        .promise()
-        .query(
-          "SELECT * FROM otpTable WHERE email = ? AND otp = ?",
-          [email, otp]
-        );
-
-      console.log(otpResponse);
-
-      if (otpResponse[0].length === 1) {
-        await db.promise().query(
-          "DELETE FROM otpTable WHERE email = ?",
-          [email]
-        );
-
-        const passwordHashed = crypto.createHash('sha256').update(password).digest('hex');
-
-        await db.promise().query(
-          "UPDATE users SET isVerified = 1, password = ? WHERE email = ?",
-          [passwordHashed, email]
-        );
-
-        res.status(200).json({ SUCCESS: "Verified Successfully !" });
-      } else {
-        res.status(401).json({ ERROR: "OTP not found" });
-      }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ ERROR: "Internal Server Error" });
     }
   },
 
@@ -192,24 +207,24 @@ module.exports = {
         } else if (user[0].isVerified === 0) {
           const otp = otpGenerator();
 
-          await db.promise().query(`LOCK TABLES otpTable WRITE`);
+          await db.promise().query(`LOCK TABLES otp WRITE`);
 
           const [response] = await db
             .promise()
-            .query(`SELECT * FROM otpTable WHERE email = ?`, [email]);
+            .query(`SELECT * FROM otp WHERE email = ?`, [email]);
 
           if (response.length === 0) {
             await db
               .promise()
               .query(
-                `INSERT INTO otpTable (email, otp, createdAt) VALUES (?, ?, ?)`,
+                `INSERT INTO otp (email, otp, created_at) VALUES (?, ?, ?)`,
                 [email, otp, new Date()]
               );
           } else {
             await db
               .promise()
               .query(
-                `UPDATE otpTable SET otp = ?, createdAt = ? WHERE email = ?`,
+                `UPDATE otp SET otp = ?, createdAt = ? WHERE email = ?`,
                 [otp, new Date(), email]
               );
           }

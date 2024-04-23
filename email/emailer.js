@@ -1,12 +1,12 @@
 const emailer = require('nodemailer');
 const { TEMPLATE_RESET_PASSWORD_OTP, TEMPLATE_LOGIN_OTP, TEMPLATE_ACCOUNT_DEACTIVATED } = require('./template');
-const TEMPLATE_USER_CREATED = require('./userCreated');
+const { TEMPLATE_USER_CREATED } = require('./userCreated');
 
 const transporter = emailer.createTransport({
     service: 'Gmail',
     auth: {
-        user: 'psuman1406@gmail.com',
-        pass: 'cbtpwsnpdaaippcx'
+        user: 'saisimhadri2207@gmail.com',
+        pass: 'kght pxda coha ghra'
     }
 });
 
@@ -14,12 +14,12 @@ module.exports = {
     sendUserCreatedEmail: (email, userName, password) => {
         var mailOptions = {
             from: {
-                name: 'Suman Panigrahi',
-                address: 'psuman1406@gmail.com',
+                name: 'i6',
+                address: 'saisimhadri2207@gmail.com',
             },
             to: email,
             subject: 'Welcome to Our Platform',
-            html: TEMPLATE_USER_CREATED(email, userName, password)
+            html: TEMPLATE_USER_CREATED(email, userName, password) // Use the template
         };
 
         console.log(mailOptions);
@@ -28,27 +28,27 @@ module.exports = {
             if (error) {
                 console.log(error);
             } else {
-                console.log('officialCreated Email sent: ' + userEmail);
+                console.log('officialCreated Email sent: ' + email);
             }
         });
     },
 
-    sendResetPasswordOTP: (email, otp) => {
+    sendOTPVerificationEmail: (email, otp) => {
         var mailOptions = {
             from: {
                 name: 'i6',
-                address: 'psuman1406@gmail.com',
+                address: 'saisimhadri2207@gmail.com',
             },
             to: email,
-            subject: 'Reset Password OTP',
-            html: TEMPLATE_RESET_PASSWORD_OTP(email, otp)
+            subject: 'Verify Your Email',
+            html: `<p>Your OTP for email verification is: <b>${otp}</b></p>`,
         };
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
                 console.log(error);
             } else {
-                console.log('Reset Password OTP Email sent: ' + userEmail);
+                console.log('OTP verification email sent to: ' + email);
             }
         });
     },
@@ -57,7 +57,7 @@ module.exports = {
         var mailOptions = {
             from: {
                 name: 'i6',
-                address: 'psuman1406@gmail.com',
+                address: 'saisimhadri2207@gmail.com',
             },
             to: email,
             subject: 'Login OTP',
@@ -77,7 +77,7 @@ module.exports = {
         var mailOptions = {
             from: {
                 name: 'i6',
-                address: 'psuman1406@gmail.com',
+                address: 'saisimhadri2207@gmail.com',
             },
             to: email,
             subject: 'User Details Updated',
@@ -98,7 +98,7 @@ module.exports = {
         var mailOptions = {
             from: {
                 name: 'i6',
-                address: 'psuman1406@gmail.com',
+                address: 'saisimhadri2207@gmail.com',
             },
             to: email,
             subject: 'Account Deactivated',
@@ -110,6 +110,26 @@ module.exports = {
                 console.log(error);
             } else {
                 console.log('Account deactivated Email sent: ' + userEmail);
+            }
+        });
+    },
+
+    sendResetPasswordOTP: (email, otp) => {
+        var mailOptions = {
+            from: {
+                name: 'i6',
+                address: 'saisimhadri2207@gmail.com',
+            },
+            to: email,
+            subject: 'Reset Password OTP',
+            html: `<p>Your OTP to reset your password is: <b>${otp}</b></p>`,
+        };
+
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Reset Password OTP Email sent to: ' + email);
             }
         });
     }

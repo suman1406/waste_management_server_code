@@ -1,83 +1,112 @@
-DROP DATABASE IF EXISTS wmapp;
+-- Table 1: Users Table
+-- role: 'FacilityOwner', 'Admin', 'LoginMaster', 'Driver'
 CREATE DATABASE wmapp;
 USE wmapp;
+
 CREATE TABLE IF NOT EXISTS users (
-    username varchar(50) NOT NULL,
-    password varchar(256),
-    email varchar(100) PRIMARY KEY,
-    mobile1 varchar(10),
-    mobile2 varchar(10),
-    aadhar varchar(20),
-    photo varchar(255),
-    driving_licence varchar(20),
-    userRole INT NOT NULL,
-    isVerified INT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS category (
-    categoryName VARCHAR(50) PRIMARY KEY,
-    basicCostCharge INT
-);
-CREATE TABLE IF NOT EXISTS facility_incharge (
-    inchargeName VARCHAR(50),
+    user_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    password_hash VARCHAR(256) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
     mobile1 VARCHAR(10),
     mobile2 VARCHAR(10),
-    email VARCHAR(100) PRIMARY KEY
+    photo VARCHAR(255),
+    role ENUM(
+        'FacilityOwner',
+        'Admin',
+        'LoginMaster',
+        'Driver'
+    ) NOT NULL,
+    is_verified BOOLEAN DEFAULT FALSE
 );
+-- Table 2: Facility Owners Table (Specific to Facility Owners)
+CREATE TABLE IF NOT EXISTS facility_owners (
+    user_id INT PRIMARY KEY,
+    facility_id VARCHAR(50),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (facility_id) REFERENCES facility(facility_id)
+);
+-- Table 3: Drivers Table (Specific to Drivers)
+CREATE TABLE IF NOT EXISTS drivers (
+    user_id INT PRIMARY KEY,
+    aadhar VARCHAR(20),
+    driving_license VARCHAR(20),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Table 4: Vehicles Table
+CREATE TABLE IF NOT EXISTS vehicle (
+    vehicle_id INT PRIMARY KEY AUTO_INCREMENT,
+    vehicle_type VARCHAR(50),
+    vehicle_no VARCHAR(50),
+    assigned_driver_id INT,
+    FOREIGN KEY (assigned_driver_id) REFERENCES users(user_id)
+);
+-- Table 5: Category Table
+CREATE TABLE IF NOT EXISTS category (
+    category_name VARCHAR(50) PRIMARY KEY,
+    basic_cost_charge INT NOT NULL
+);
+-- Table 6: Facility Table
 CREATE TABLE IF NOT EXISTS facility (
-    facilityID VARCHAR(50) PRIMARY KEY,
-    categoryName VARCHAR(50),
-    inchargeEmail VARCHAR(100),
-    landline VARCHAR(20),
-    facilityEmail VARCHAR(100),
-    photo varchar(255),
-    geoCoordinates VARCHAR(50),
+    facility_id VARCHAR(50) PRIMARY KEY,
+    facility_name VARCHAR(50),
+    user_id INT,
+    facility_phone VARCHAR(20),
+    facility_email VARCHAR(100),
+    photo VARCHAR(255),
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
     landmark VARCHAR(100),
-    timeslot TIMEStamp,
-    description varchar(50),
-    gpay_number varchar(20),
-    bank_acc varchar(20),
-    bank_acc_holder varchar(50),
-    ifsc_code varchar(20),
-    FOREIGN KEY (categoryName) REFERENCES category(categoryName),
-    FOREIGN KEY (inchargeEmail) REFERENCES facility_incharge(email)
+    gpay_number VARCHAR(20),
+    bank_acc VARCHAR(20),
+    bank_acc_holder VARCHAR(50),
+    ifsc_code VARCHAR(20),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
-CREATE TABLE IF NOT EXISTS wasteCollectionStatus (
-    statusID VARCHAR(50),
-    statusName VARCHAR(50),
-    dateVisited varchar(10),
-    timeVisited TIME,
-    facilityID VARCHAR(50),
-    email VARCHAR(100),
-    PRIMARY KEY(dateVisited, facilityID),
-    FOREIGN KEY (facilityID) REFERENCES facility(facilityID),
-    FOREIGN KEY (email) REFERENCES users(email)
+-- Table 7: Time Slot Table
+CREATE TABLE IF NOT EXISTS time_slot (
+    label VARCHAR(20) PRIMARY KEY,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL
 );
-CREATE TABLE IF NOT EXISTS otpTable (
-    email VARCHAR(100),
-    otp VARCHAR(255),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Table 8: Request Table (Waste Pickup Requests)
+CREATE TABLE IF NOT EXISTS request (
+    request_id INT PRIMARY KEY AUTO_INCREMENT,
+    facility_owner_id INT,
+    solid_waste_quantity DECIMAL(10, 2) DEFAULT 0,
+    liquid_waste_quantity DECIMAL(10, 2) DEFAULT 0,
+    pickup_time_slot VARCHAR(20),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending', 'upcoming', 'completed') DEFAULT 'pending',
+    is_collected BOOLEAN DEFAULT FALSE,
+    payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+    category_name VARCHAR(50),
+    FOREIGN KEY (facility_owner_id) REFERENCES users(user_id),
+    FOREIGN KEY (pickup_time_slot) REFERENCES time_slot(label),
+    FOREIGN KEY (category_name) REFERENCES category(category_name)
 );
-INSERT INTO users (
-        username,
-        password,
-        email,
-        mobile1,
-        mobile2,
-        aadhar,
-        photo,
-        driving_licence,
-        userRole,
-        isVerified
-    )
-VALUES (
-        'john_doe',
-        '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
-        'psuman1406@gmail.com',
-        '1234567890',
-        '0987654321',
-        '123456789012',
-        '12345678765432',
-        'DL123456',
-        1,
-        1
-    );
+-- Table 9: Trip Table (Trips assigned to Drivers)
+CREATE TABLE IF NOT EXISTS trip (
+    trip_id INT PRIMARY KEY AUTO_INCREMENT,
+    request_id INT,
+    driver_id INT,
+    status ENUM('upcoming', 'completed') DEFAULT 'upcoming',
+    FOREIGN KEY (request_id) REFERENCES request(request_id),
+    FOREIGN KEY (driver_id) REFERENCES users(user_id)
+);
+-- Table 10: Notification Table
+CREATE TABLE IF NOT EXISTS notification (
+    notification_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    message TEXT NOT NULL,
+    read_status BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+-- Table 11: OTP Table
+CREATE TABLE IF NOT EXISTS otp (
+    user_id INT,
+    otp_hash VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, created_at),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);

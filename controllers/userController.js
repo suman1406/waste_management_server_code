@@ -16,18 +16,11 @@ module.exports = {
       dri_licence,
       role,
     } = req.body;
+
+    console.log("Request Body:", req.body);
     const userRole = req.userRole;
     const userEmail = req.userEmail;
-    if (
-      !validator.REGEX_EMAIL.test(email) ||
-      !validator.REGEX_MOBILE.test(mobile1) ||
-      !validator.REGEX_MOBILE.test(mobile2) ||
-      !validator.REGEX_AADHAR.test(aadhar) ||
-      !validator.REGEX_NAME.test(userName)
-    ) {
-      res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
-      return;
-    }
+
     if (userRole == 1) {
       try {
         const [response] = await db
@@ -166,7 +159,7 @@ module.exports = {
               dri_licence,
               role,
             ]);
-            console.log("###", email, userName, password);
+          console.log("###", email, userName, password);
           if (response1.affectedRows == 1) {
             // Send email with password
             await emailer.sendUserCreatedEmail(
@@ -194,36 +187,32 @@ module.exports = {
     const currRole = req.userRole;
     const email = req.userEmail;
 
-    console.log("##", req.userEmail);
-
-    console.log("##", req.body);
-
-    console.log(currRole);
+    console.log("User Email:", email);
+    console.log("Request Body:", req.body);
+    console.log("Current Role:", currRole);
 
     if (currRole == 0 || currRole == 1) {
-
-      if (
-        userRole != 0 && userRole != 1 && userRole != 2
-      ) {
+      if (userRole != 0 && userRole != 1 && userRole != 2) {
         return res.status(400).json({ "BAD REQUEST": "Incorrect credentials" });
       }
 
       try {
-        const [response] = await db
-          .promise()
-          .query("SELECT * FROM users WHERE email = ?", [email]);
+        const [response] = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
 
-          console.log(response);
+        console.log("User Data:", response);
 
         if (response.length != 0) {
-          const [result] = await db.promise().query("SELECT * FROM users WHERE userRole = ?", [userRole]);
-          console.log("##", result);
+          const [result] = await db.promise().query("SELECT * FROM users WHERE userRole = ? and isVerified = 1", [userRole]);
 
-          if (result.affectedRows != 0) {
+          console.log("Result:", result);
+
+          if (result.length != 0) {
             return res.status(200).json({ SUCCESS: "User found", result });
           } else {
             return res.status(400).json({ "BAD REQUEST": "User not found" });
           }
+        } else {
+          return res.status(400).json({ "BAD REQUEST": "User not found" });
         }
       } catch (err) {
         console.log(err);
@@ -233,4 +222,21 @@ module.exports = {
       return res.status(401).json({ ERROR: "Authorized Access Only!" });
     }
   },
+
+  getUserCount: async (req, res) => {
+    const userRole = req.body.userRole; // Get the user role from the request body
+
+    try {
+      const userCountQuery = "SELECT COUNT(*) AS count FROM users WHERE userRole = ? and isVerified = 1";
+      const [rows] = await db.promise().query(userCountQuery, [userRole]);
+
+      const userCount = parseFloat(rows[0].count);
+
+      res.status(200).json({ userCount });
+    } catch (error) {
+      console.error("Error fetching user count:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  },
+
 };

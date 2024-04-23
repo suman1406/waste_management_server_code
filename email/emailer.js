@@ -14,7 +14,7 @@ module.exports = {
     sendUserCreatedEmail: (email, userName, password) => {
         var mailOptions = {
             from: {
-                name: 'Suman Panigrahi',
+                name: 'i6',
                 address: 'psuman1406@gmail.com',
             },
             to: email,

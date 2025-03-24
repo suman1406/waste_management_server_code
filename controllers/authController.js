@@ -92,7 +92,6 @@ module.exports = {
     const { email, otp } = req.body;
 
     try {
-      // Fetch OTP and created_at timestamp
       const [otpRows] = await db.promise().query(
         "SELECT otp_hash, created_at FROM otp WHERE user_id = (SELECT user_id FROM users WHERE email = ?)",
         [email]
@@ -104,20 +103,23 @@ module.exports = {
 
       const { otp_hash, created_at } = otpRows[0];
 
-      // Check if the OTP is expired (more than 60 seconds old)
+      // Check if the OTP is expired (more than 20 seconds old)
       const createdAtTime = new Date(created_at);
       const currentTime = new Date();
       const timeDiff = (currentTime - createdAtTime) / 1000; // Difference in seconds
 
       if (timeDiff > 20) {
-        await db.promise().query("DELETE FROM otp WHERE user_id = (SELECT user_id FROM users WHERE email = ?)", [email]);
         return res.status(400).json({ ERROR: "OTP expired. Request a new one." });
       }
 
       // If OTP matches
       if (otp === otp_hash) {
-        await db.promise().query("DELETE FROM otp WHERE user_id = (SELECT user_id FROM users WHERE email = ?)", [email]);
-        return res.status(200).json({ SUCCESS: "OTP verified successfully" });
+        await db.promise().query(
+          "UPDATE users SET is_verified = 1 WHERE email = ?",
+          [email]
+        );
+
+        return res.status(200).json({ SUCCESS: "OTP verified successfully. Account activated." });
       } else {
         return res.status(400).json({ ERROR: "Invalid OTP" });
       }
@@ -209,14 +211,6 @@ module.exports = {
       }
 
       if (user.is_verified === 0) {
-        // Update is_verified to 1 in the users table
-        await db.promise().query(
-          `UPDATE users SET is_verified = 1 WHERE user_id = ?`,
-          [user.user_id]
-        );
-
-        console.log("User verified status updated to 1");
-
         const otp = otpGenerator();
         console.log("Generated OTP:", otp);
 
@@ -249,9 +243,9 @@ module.exports = {
         });
 
         return res.status(201).send({
-          "message": "First-time login! OTP sent to email. Account verified.",
+          "message": "First-time login! OTP sent to email.",
           "token": token,
-          "userData": { ...user, is_verified: 1 },  // Send updated user data
+          "userData": user, // is_verified is still 0
         });
       }
 

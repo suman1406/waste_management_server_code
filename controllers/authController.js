@@ -73,11 +73,11 @@ module.exports = {
           [userId, otp]
         );
 
-        // Send OTP via email
+        // Send OTP via email 
         await emailer.sendUserCreatedEmail(email, userName, password);
 
         return res.status(200).json({
-          "user ADDED": "Registered successfully! OTP sent to email.",
+          "user ADDED": "Registered successfully!",
         });
       } else {
         return res.status(500).json({ ERROR: "User registration failed" });
@@ -181,89 +181,99 @@ module.exports = {
   login: async (req, res) => {
     const { email, password } = req.body;
 
-    // Validation
-    if (
-      !email ||
-      !password
-    ) {
+    if (!email || !password) {
       return res.status(400).send({ message: 'Missing details.' });
     }
 
     try {
-      const passwordHashed = crypto.createHash('sha256').update(password).digest('hex');
+      const [rows] = await db.promise().query(
+        `SELECT * FROM users WHERE email = ?`,
+        [email]
+      );
 
-      const [user] = await db
-        .promise()
-        .query(
-          `SELECT * FROM users WHERE email = ? AND password = ?`,
-          [email, passwordHashed]
+      if (rows.length === 0) {
+        return res.status(401).send({ message: 'Invalid credentials.' });
+      }
+
+      const user = rows[0];
+
+      // Compare entered password with stored hashed password
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+
+      if (!isMatch) {
+        return res.status(401).send({ message: 'Invalid credentials.' });
+      }
+
+      if (user.is_verified === 2) {
+        return res.status(401).json({ BLOCKED: "You are blocked, contact login master" });
+      }
+
+      if (user.is_verified === 0) {
+        // Update is_verified to 1 in the users table
+        await db.promise().query(
+          `UPDATE users SET is_verified = 1 WHERE user_id = ?`,
+          [user.user_id]
         );
 
-      if (user.length === 0) {
-        return res.status(401).send({ message: 'Invalid credentials.' });
-      } else if (user.length >= 1) {
-        if (user[0].isVerified === 2) {
-          return res.status(401).json({ BLOCKED: "You are blocked, contact login master" });
-        } else if (user[0].isVerified === 0) {
-          const otp = otpGenerator();
+        console.log("User verified status updated to 1");
 
-          await db.promise().query(`LOCK TABLES otp WRITE`);
+        const otp = otpGenerator();
+        console.log("Generated OTP:", otp);
 
-          const [response] = await db
-            .promise()
-            .query(`SELECT * FROM otp WHERE email = ?`, [email]);
+        const [response] = await db.promise().query(
+          `SELECT * FROM otp WHERE user_id = ?`, [user.user_id]
+        );
 
-          if (response.length === 0) {
-            await db
-              .promise()
-              .query(
-                `INSERT INTO otp (email, otp, created_at) VALUES (?, ?, ?)`,
-                [email, otp, new Date()]
-              );
-          } else {
-            await db
-              .promise()
-              .query(
-                `UPDATE otp SET otp = ?, createdAt = ? WHERE email = ?`,
-                [otp, new Date(), email]
-              );
-          }
-
-          // Send mail
-          await emailer.sendLoginOTP(
-            user[0].email,
-            otp
+        if (response.length === 0) {
+          await db.promise().query(
+            `INSERT INTO otp (user_id, otp_hash, created_at) VALUES (?, ?, ?)`,
+            [user.user_id, otp, new Date()]
           );
-
-          const token = await createOtpToken({
-            "email": email,
-            "userRole": user[0].userRole,
-          });
-
-          await db.promise().query(`UNLOCK TABLES`);
-
-          return res.status(201).send({
-            "message": "First time login! OTP sent to email.",
-            "token": token,
-            "userData": user[0],
-          });
-        } else if (user[0].isVerified === 1) {
-          let token = await accessTokenGenerator({
-            "userEmail": email,
-            "userRole": user[0].userRole,
-          });
-          return res.status(200).send({
-            SUCCESS: "Login Successfull !",
-            userData: user[0],
-            token: token
-          });
+        } else {
+          await db.promise().query(
+            `UPDATE otp SET otp_hash = ?, created_at = ? WHERE user_id = ?`,
+            [otp, new Date(), user.user_id]
+          );
         }
-      } else {
-        return res.status(501).send({ message: 'Internal server error.' });
+
+        try {
+          await emailer.sendLoginOTP(user.email, otp);
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr);
+          return res.status(500).send({ message: "Failed to send OTP email." });
+        }
+
+        const token = await createOtpToken({
+          "email": email,
+          "userRole": user.role,
+        });
+
+        return res.status(201).send({
+          "message": "First-time login! OTP sent to email. Account verified.",
+          "token": token,
+          "userData": { ...user, is_verified: 1 },  // Send updated user data
+        });
       }
+
+      if (user.is_verified === 1) {
+        let token = await accessTokenGenerator({
+          "userEmail": email,
+          "userRole": user.role,
+        });
+
+        return res.status(200).send({
+          SUCCESS: "Login Successful!",
+          userData: user,
+          token: token
+        });
+      }
+
+      return res.status(501).send({ message: 'Internal server error.' });
+
     } catch (err) {
-      console.error(err);
+      console.error("Unhandled Error:", err);
       return res.status(500).send({ message: 'Internal server error.' });
     }
-  },
+  }
+
 };

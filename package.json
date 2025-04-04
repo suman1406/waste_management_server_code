@@ -4,6 +4,7 @@
   "description": "This code is specifically written for waste management project app",
   "main": "server.js",
   "scripts": {
+    "dev": "nodemon server.js",
     "test": "node server.js",
     "start": "node server.js"
   },

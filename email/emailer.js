@@ -1,5 +1,12 @@
 const emailer = require('nodemailer');
-const { TEMPLATE_RESET_PASSWORD_OTP, TEMPLATE_LOGIN_OTP, TEMPLATE_ACCOUNT_DELETED } = require('./template');
+const { 
+    TEMPLATE_RESET_PASSWORD_OTP, 
+    TEMPLATE_LOGIN_OTP, 
+    TEMPLATE_ACCOUNT_DELETED,
+    TEMPLATE_USER_BLOCKED,
+    TEMPLATE_USER_UNBLOCKED,
+    TEMPLATE_UPDATE_USER_DETAILS
+} = require('./template');
 const { TEMPLATE_USER_CREATED } = require('./userCreated');
 
 const transporter = emailer.createTransport({
@@ -79,7 +86,7 @@ module.exports = {
             },
             to: email,
             subject: 'User Details Updated',
-            html: 'User details have been updated. Please log in to your account for more information.'
+            html: TEMPLATE_UPDATE_USER_DETAILS(email)
         };
 
         transporter.sendMail(mailOptions, function (error, info) {
@@ -129,5 +136,39 @@ module.exports = {
                 console.log('Reset Password OTP Email sent to: ' + email);
             }
         });
-    }
+    },
+
+    sendUserBlockedEmail: (email) => {
+        var mailOptions = {
+            from: { 
+                name: 'i6', 
+                address: 'saisimhadri2207@gmail.com' 
+            },
+            to: email,
+            subject: 'Account Blocked',
+            html: TEMPLATE_USER_BLOCKED(email)
+        };
+
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) console.error(error);
+            else console.log('User Blocked Email sent to: ' + email);
+        });
+    },
+
+    sendUserUnblockedEmail: (email) => {
+        var mailOptions = {
+            from: { 
+                name: 'i6', 
+                address: 'saisimhadri2207@gmail.com' 
+            },
+            to: email,
+            subject: 'Account Unblocked',
+            html: TEMPLATE_USER_UNBLOCKED(email)
+        };
+        
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) console.error(error);
+            else console.log('User Unblocked Email sent to: ' + email);
+        });
+    },
 };

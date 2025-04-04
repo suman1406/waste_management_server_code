@@ -110,9 +110,61 @@ const TEMPLATE_ACCOUNT_DELETED = (email) => {
     </html>`;
 };
 
+// Template for User blocked notification
+const TEMPLATE_USER_BLOCKED = (email) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Blocked</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <p>Dear User,</p>
+    <br />
+    <p>Your account has been blocked by the LoginMaster.</p>
+    <br />
+    <p>If you have any questions, please contact our support team.</p>
+    <br />
+    <p>Regards,</p>
+    <p>Platform Team</p>
+</body>
+</html>`;
+}
+
+// Template for User unblocked notification
+const TEMPLATE_USER_UNBLOCKED = (email) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Unblocked</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <p>Dear User,</p>
+    <br />
+    <p>Your account has been unblocked. You can now log in to your account.</p>
+    <br />
+    <p>If you have any questions, please contact our support team.</p>
+    <br />
+    <p>Regards,</p>
+    <p>Platform Team</p>
+</body>
+</html>`;
+}
+
 module.exports = {
     TEMPLATE_RESET_PASSWORD_OTP,
     TEMPLATE_LOGIN_OTP,
     TEMPLATE_ACCOUNT_DELETED,
-    TEMPLATE_UPDATE_USER_DETAILS
+    TEMPLATE_UPDATE_USER_DETAILS,
+    TEMPLATE_USER_BLOCKED,
+    TEMPLATE_USER_UNBLOCKED
 };

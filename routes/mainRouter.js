@@ -7,6 +7,7 @@ const facilityRouter = require("./facilityRouter");
 const wasteStatRouter = require("./wasteStatRouter");
 const categoryRouter = require("./categoryRouter");
 const facilityInchargeRouter = require("../routes/inchargeRouter");
+const loginMasterRouter = require("./loginMasterRouter");
 
 router.get("/test", testController.test);
 router.use("/auth", authRouter);
@@ -15,5 +16,6 @@ router.use("/facility", facilityRouter);
 router.use("/stat", wasteStatRouter);
 router.use("/category", categoryRouter);
 router.use("/facilityIncharge", facilityInchargeRouter);
+router.use("/loginMaster", loginMasterRouter);
 
-module.exports = router
+module.exports = router;

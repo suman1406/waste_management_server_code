@@ -1,5 +1,5 @@
 const emailer = require('nodemailer');
-const { TEMPLATE_RESET_PASSWORD_OTP, TEMPLATE_LOGIN_OTP, TEMPLATE_ACCOUNT_DEACTIVATED } = require('./template');
+const { TEMPLATE_RESET_PASSWORD_OTP, TEMPLATE_LOGIN_OTP, TEMPLATE_ACCOUNT_DELETED } = require('./template');
 const { TEMPLATE_USER_CREATED } = require('./userCreated');
 
 const transporter = emailer.createTransport({
@@ -19,16 +19,14 @@ module.exports = {
             },
             to: email,
             subject: 'Welcome to Our Platform',
-            html: TEMPLATE_USER_CREATED(email, userName, password) // Use the template
+            html: TEMPLATE_USER_CREATED(email, userName, password)
         };
-
-        console.log(mailOptions);
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
                 console.log(error);
             } else {
-                console.log('officialCreated Email sent: ' + email);
+                console.log('User Created Email sent: ' + email);
             }
         });
     },
@@ -84,7 +82,6 @@ module.exports = {
             html: 'User details have been updated. Please log in to your account for more information.'
         };
 
-        // Send email
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
                 console.error('Error sending updated user details email:', error);
@@ -94,22 +91,22 @@ module.exports = {
         });
     },
 
-    sendAccountDeactivatedEmail: (email) => {
+    sendAccountDeletedEmail: (email) => {
         var mailOptions = {
             from: {
                 name: 'i6',
                 address: 'saisimhadri2207@gmail.com',
             },
             to: email,
-            subject: 'Account Deactivated',
-            html: TEMPLATE_ACCOUNT_DEACTIVATED(email)
+            subject: 'Account Deleted',
+            html: TEMPLATE_ACCOUNT_DELETED(email)
         };
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
                 console.log(error);
             } else {
-                console.log('Account deactivated Email sent: ' + userEmail);
+                console.log('Account Deleted Email sent: ' + email);
             }
         });
     },

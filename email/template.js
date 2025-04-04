@@ -81,14 +81,14 @@ const TEMPLATE_UPDATE_USER_DETAILS = () => {
     </html>`;
 }
 
-// Template for account deactivated email
-const TEMPLATE_ACCOUNT_DEACTIVATED = (email) => {
+// Template for account deleted email
+const TEMPLATE_ACCOUNT_DELETED = (email) => {
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Account Deactivated</title>
+        <title>Account Deleted</title>
         <style>
             * {
                 margin: 0;
@@ -100,7 +100,7 @@ const TEMPLATE_ACCOUNT_DEACTIVATED = (email) => {
     <body>
         <p>Dear User,</p>
         <br />
-        <p>Your account has been deactivated.</p>
+        <p>Your account has been permanently deleted.</p>
         <br />
         <p>If you have any questions, please contact our support team.</p>
         <br />
@@ -108,11 +108,11 @@ const TEMPLATE_ACCOUNT_DEACTIVATED = (email) => {
         <p>Platform Team</p>
     </body>
     </html>`;
-}
+};
 
 module.exports = {
     TEMPLATE_RESET_PASSWORD_OTP,
     TEMPLATE_LOGIN_OTP,
-    TEMPLATE_ACCOUNT_DEACTIVATED,
+    TEMPLATE_ACCOUNT_DELETED,
     TEMPLATE_UPDATE_USER_DETAILS
 };

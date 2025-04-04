@@ -35,12 +35,14 @@
     "mysql2": "^3.13.0",
     "ngrok": "^5.0.0-beta.2",
     "nodemailer": "^6.10.0",
-    "nodemon": "^3.1.0",
     "os": "^0.1.2",
     "otp-generator": "^4.0.1",
     "paseto": "^3.1.4",
     "pid": "^1.0.0",
     "validator": "^13.11.0",
     "waste_management_server_code": "file:"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
   }
 }

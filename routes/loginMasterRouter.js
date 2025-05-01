@@ -6,8 +6,8 @@ const accessTokenValidator = require("../middleware/accessTokenValidator");
 router.get("/getUser", accessTokenValidator, loginMasterController.getUser);
 router.post("/createUser", accessTokenValidator, loginMasterController.createUser);
 router.delete("/deleteUser", accessTokenValidator, loginMasterController.deleteUser);
-router.post("/updateUser", accessTokenValidator, loginMasterController.updateUser);
-router.post("/blockUser", accessTokenValidator, loginMasterController.blockUser);
-router.post("/unblockUser", accessTokenValidator, loginMasterController.unblockUser);
+router.put("/updateUser", accessTokenValidator, loginMasterController.updateUser);
+router.patch("/blockUser", accessTokenValidator, loginMasterController.blockUser);
+router.patch("/unblockUser", accessTokenValidator, loginMasterController.unblockUser);
 
 module.exports = router;

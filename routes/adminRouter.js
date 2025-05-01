@@ -9,5 +9,6 @@ router.delete("/deleteUser", accessTokenValidator, adminController.deleteUser);
 router.put("/updateUser", accessTokenValidator, adminController.updateUser);
 router.patch("/blockUser", accessTokenValidator, adminController.blockUser);
 router.patch("/unblockUser", accessTokenValidator, adminController.unblockUser);
+router.get("/getPlatformData", accessTokenValidator, adminController.getPlatformData);
 
 module.exports = router;

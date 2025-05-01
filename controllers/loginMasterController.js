@@ -231,7 +231,6 @@ module.exports = {
             if (user[0].role === "Driver" && (aadhar || driving_license)) {
                 const driverUpdates = {};
                 if (aadhar && validator.REGEX_AADHAR.test(aadhar)) driverUpdates.aadhar = aadhar;
-                console.log(aadhar);
                 if (driving_license) driverUpdates.driving_license = driving_license;
 
                 if (Object.keys(driverUpdates).length > 0) {

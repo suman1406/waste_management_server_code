@@ -19,7 +19,6 @@ module.exports = {
         const { email } = req.query;
     
         if (!email || !validator.REGEX_EMAIL.test(email)) {
-            console.log(email)
             return res.status(400).json({ error: "Invalid email provided" });
         }
     
@@ -176,7 +175,6 @@ module.exports = {
             if (user[0].role === "Driver" && (aadhar || driving_license)) {
                 const driverUpdates = {};
                 if (aadhar && validator.REGEX_AADHAR.test(aadhar)) driverUpdates.aadhar = aadhar;
-                console.log(aadhar);
                 if (driving_license) driverUpdates.driving_license = driving_license;
 
                 if (Object.keys(driverUpdates).length > 0) {
@@ -245,4 +243,61 @@ module.exports = {
             return res.status(500).json({ error: "Internal server error" });
         }
     },
+    
+    getPlatformData: async (req, res) => {
+        if (!verifyAdmin(req, res)) {
+            return;
+        }
+
+        try {
+            const [totalUsersRes] = await db.promise().query("SELECT COUNT(*) AS totalUsers FROM users");
+            const totalUsers = totalUsersRes[0].totalUsers;
+
+            const [wasteRes] = await db.promise().query(
+                `SELECT
+                    COALESCE(SUM(solid_waste_quantity), 0) AS solid,
+                    COALESCE(SUM(liquid_waste_quantity), 0) AS liquid,
+                    COALESCE(SUM(solid_waste_quantity + liquid_waste_quantity), 0) AS total
+                 FROM request`
+            );
+
+            const [revenueRes] = await db.promise().query(
+                `SELECT
+                    COALESCE(SUM((r.solid_waste_quantity + r.liquid_waste_quantity) * c.basic_cost_charge), 0) AS totalRevenue
+                FROM request r
+                JOIN category c ON r.category_name = c.category_name
+                WHERE r.payment_status = 'completed'`
+            );
+
+            const [requestCounts] = await db.promise().query(
+                `SELECT
+                    COALESCE(SUM(status='pending'), 0) AS pending,
+                    COALESCE(SUM(status='upcoming'), 0) AS upcoming,
+                    COALESCE(SUM(status='completed'), 0) AS completed,
+                    COUNT(*) AS total
+                FROM request`
+            );
+
+            const [paymentCounts] = await db.promise().query(
+                `SELECT
+                    COALESCE(SUM(payment_status='completed'), 0) AS completed,
+                    COALESCE(SUM(payment_status='pending'), 0) AS pending,
+                    COALESCE(SUM(payment_status='failed'), 0) AS failed,
+                    COUNT(*) AS total
+                FROM request`
+            );
+
+            return res.status(200).json({
+                totalUsers,
+                wasteCollected: wasteRes[0],
+                totalRevenue: Number(revenueRes[0].totalRevenue),
+                requestCounts: requestCounts[0],
+                paymentStatus: paymentCounts[0]
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    },
 };
+

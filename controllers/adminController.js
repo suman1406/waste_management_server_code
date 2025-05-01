@@ -3,11 +3,9 @@ const bcrypt = require("bcrypt");
 const validator = require("../middleware/validator");
 const emailer = require("../email/emailer");
 
-const allowedRoles = ["Driver", "FacilityOwner"];
-
-function verifyLoginMaster(req, res) {
-    if (req.userRole !== "LoginMaster") {
-        res.status(403).json({ error: "Unauthorized. Only Login Master is authorized for this action." });
+function verifyAdmin(req, res) {
+    if (req.userRole !== "Admin") {
+        res.status(403).json({ error: "Unauthorized. Only Admin is authorized for this action." });
         return false;
     }
     return true;
@@ -15,12 +13,13 @@ function verifyLoginMaster(req, res) {
 
 module.exports = {
     getUser: async (req, res) => {
-        if (!verifyLoginMaster(req, res)) {
+        if (!verifyAdmin(req, res)) {
             return;
         }
         const { email } = req.query;
     
         if (!email || !validator.REGEX_EMAIL.test(email)) {
+            console.log(email)
             return res.status(400).json({ error: "Invalid email provided" });
         }
     
@@ -54,7 +53,7 @@ module.exports = {
     },
 
     createUser: async (req, res) => {
-        if (!verifyLoginMaster(req, res)) {
+        if (!verifyAdmin(req, res)) {
             return;
         }
         const { 
@@ -71,9 +70,7 @@ module.exports = {
         if (!userName || !email || !mobile1 || !role || !validator.REGEX_NAME.test(userName) || !validator.REGEX_MOBILE.test(mobile1) || !validator.REGEX_EMAIL.test(email)) {
             return res.status(400).json({ error: "Missing or invalid input data" });
         }
-        if (!allowedRoles.includes(role)) {
-            return res.status(400).json({ error: "User role must be either Driver or FacilityOwner" });
-        }
+        
         try {
             const [existingUser] = await db.promise().query("SELECT user_id FROM users WHERE email = ?", [email]);
             
@@ -116,7 +113,7 @@ module.exports = {
     },
 
     deleteUser: async (req, res) => {
-        if (!verifyLoginMaster(req, res)) {
+        if (!verifyAdmin(req, res)) {
             return;
         }
         const { email } = req.body;
@@ -146,60 +143,8 @@ module.exports = {
         }
     },
 
-    blockUser: async (req, res) => {
-        if (!verifyLoginMaster(req, res)) {
-            return;
-        }
-        const { email } = req.body;
-
-        if (!email || !validator.REGEX_EMAIL.test(email)) {
-            return res.status(400).json({ error: "Invalid email provided" });
-        }
-
-        try {
-            const [user] = await db.promise().query("SELECT user_id FROM users WHERE email = ?", [email]);
-            if (user.length === 0) {
-                return res.status(404).json({ error: "User not found" });
-            }
-
-            await db.promise().query("UPDATE users SET is_verified = 2 WHERE email = ?", [email]);
-            await emailer.sendUserBlockedEmail(email);
-
-            return res.status(200).json({ success: "User blocked successfully" });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ error: "Internal server error" });
-        }
-    },
-
-    unblockUser: async (req, res) => {
-        if (!verifyLoginMaster(req, res)) {
-            return;
-        }
-        const { email } = req.body;
-
-        if (!email || !validator.REGEX_EMAIL.test(email)) {
-            return res.status(400).json({ error: "Invalid email provided" });
-        }
-
-        try {
-            const [user] = await db.promise().query("SELECT user_id FROM users WHERE email = ?", [email]);
-            if (user.length === 0) {
-                return res.status(404).json({ error: "User not found" });
-            }
-
-            await db.promise().query("UPDATE users SET is_verified = 1 WHERE email = ?", [email]);
-            await emailer.sendUserUnblockedEmail(email);
-
-            return res.status(200).json({ success: "User unblocked successfully" });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ error: "Internal server error" });
-        }
-    },
-
     updateUser: async (req, res) => {
-        if (!verifyLoginMaster(req, res)) {
+        if (!verifyAdmin(req, res)) {
             return;
         }
         const { email, userName, mobile1, mobile2, photo, aadhar, driving_license } = req.body;
@@ -247,5 +192,57 @@ module.exports = {
             console.error(err);
             return res.status(500).json({ error: "Internal server error" });
         }
-    }
+    },
+
+    blockUser: async (req, res) => {
+        if (!verifyAdmin(req, res)) {
+            return;
+        }
+        const { email } = req.body;
+
+        if (!email || !validator.REGEX_EMAIL.test(email)) {
+            return res.status(400).json({ error: "Invalid email provided" });
+        }
+
+        try {
+            const [user] = await db.promise().query("SELECT user_id FROM users WHERE email = ?", [email]);
+            if (user.length === 0) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            await db.promise().query("UPDATE users SET is_verified = 2 WHERE email = ?", [email]);
+            await emailer.sendUserBlockedEmail(email);
+
+            return res.status(200).json({ success: "User blocked successfully" });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    },
+
+    unblockUser: async (req, res) => {
+        if (!verifyAdmin(req, res)) {
+            return;
+        }
+        const { email } = req.body;
+
+        if (!email || !validator.REGEX_EMAIL.test(email)) {
+            return res.status(400).json({ error: "Invalid email provided" });
+        }
+
+        try {
+            const [user] = await db.promise().query("SELECT user_id FROM users WHERE email = ?", [email]);
+            if (user.length === 0) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            await db.promise().query("UPDATE users SET is_verified = 1 WHERE email = ?", [email]);
+            await emailer.sendUserUnblockedEmail(email);
+
+            return res.status(200).json({ success: "User unblocked successfully" });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+    },
 };

@@ -21,8 +21,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 -- Table 2: Facility Owners Table (Specific to Facility Owners)
 CREATE TABLE IF NOT EXISTS facility_owners (
-    user_id INT PRIMARY KEY,
+    user_id INT,
     facility_id VARCHAR(50),
+    PRIMARY KEY (user_id, facility_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (facility_id) REFERENCES facility(facility_id)
 );
